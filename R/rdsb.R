@@ -60,6 +60,7 @@ readRDSBundleIndex <- function(bundle_file) {
   seek(bundle_file, file_size - 4 - index_size)
   raw_index <- readBin(bundle_file, "raw", n = index_size)
 
+  close(bundle_file)
   return(unserialize(raw_index))
 }
 
@@ -70,9 +71,8 @@ readRDSBundleIndex <- function(bundle_file) {
 #' @return The object
 #' @export
 readObjectFromRDSBundle <- function(bundle_file, key, index = NULL) {
-  con <- gzfile(bundle_file, "rb")
-
   if (missing(index)) {
+    con <- file(bundle_file, "rb")
     index <- readRDSBundleIndex(con)
   } else {
     index <- index
@@ -83,6 +83,7 @@ readObjectFromRDSBundle <- function(bundle_file, key, index = NULL) {
   object_offset <- index[[key]]$offset
   object_size <- index[[key]]$size
 
+  con <- gzfile(bundle_file, "rb")
   seek(con, object_offset)
   raw_object <- readBin(con, "raw", n = object_size) %>%
     memDecompress(type = "gzip")
@@ -97,6 +98,12 @@ readObjectFromRDSBundle <- function(bundle_file, key, index = NULL) {
 #' @param bundle_file filename where to write the bundle_file
 #' @export
 saveRDSBundle <- function(objects, bundle_file) {
+  if (!inherits(bundle_file, "connection")) {
+    bundle_con <- file(bundle_file, "ab")
+  } else {
+    stopifnot(!file.exists(bundle_file))
+    bundle_con <- bundle_file
+  }
   current_offset <- 0
   index <- list()
 
@@ -109,9 +116,6 @@ saveRDSBundle <- function(objects, bundle_file) {
     }
   }
 
-  stopifnot(!file.exists(bundle_file))
-
-  bundle_con <- file(bundle_file, "ab")
   raw_con <- rawConnection(raw(0), "wb")
 
   if (is.environment(objects)) {
