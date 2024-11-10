@@ -38,3 +38,11 @@ setMethod(
     x[[name]]
   }
 )
+
+# setMethod(
+#  f = "pluck",
+#  signature = c(x = "rdsbObject", "name" = "character", ...),
+#  definition = function(x, name) {
+#    x[[name]]
+#  }
+# )
