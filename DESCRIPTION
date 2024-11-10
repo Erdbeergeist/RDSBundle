@@ -1,0 +1,16 @@
+Package: rdsb
+Title: Defines .rdsb Format
+Version: 0.0.0.1
+Authors@R: 
+    person("Lukas", "Mittnacht", , "luxmitges@web.de", role = c("aut", "cre"))
+Description: Allows saving lists or environments to .rdsb (RDSBundle) Files.
+    These files contain seperate indexed .rds files per Object.
+    The Objects can be read seperately or all at once. Supports parallel reading via furrr.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Imports:
+  dplyr,
+  furrr,
+  magrittr
