@@ -7,7 +7,10 @@
 #'
 #' @return a connection or vector of connections
 #' @export
-getConnectionFromString <- function(x, mode = "a+b", con_function = gzfile) {
+getConnectionFromString <- function(x,
+                                    mode = "a+b",
+                                    con_function = gzfile,
+                                    overwrite_protect = TRUE) {
   if (inherits(x, "connection")) {
     return(x)
   }
