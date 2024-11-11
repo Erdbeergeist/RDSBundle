@@ -1,12 +1,20 @@
+#' Get a connection from a chrachter, character vector or pass on a connection
+#'
+#' @param x character or chrarcter vector to turn into a connection
+#' @param mode to open the file(s) in
+#' @param con_funciton the funciton to open the file(s) with
+#'
+#' @return a connection or vector of connections
+#' @export
 getConnectionFromString <- function(x, mode = "a+b", con_function = gzfile) {
   if (inherits(x, "connection")) {
     return(x)
   }
 
   if (length(x) > 1 && is.character(x)) {
-    return(sapply(x, ~ con_function(x, mode = mode)))
+    return(lapply(x, function(x) con_function(x, open = mode)))
   } else if (is.character(x)) {
-    return(con_function(x, mode = mode))
+    return(con_function(x, open = mode))
   } else {
     stop("Must provide a character or character vector")
   }
