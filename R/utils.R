@@ -16,13 +16,13 @@ getConnectionFromString <- function(x,
   }
 
   if (length(x) > 1 && is.character(x)) {
-    if (overwrite_protect) {
-      if (any(file.exists(x))) stop("Overwrite protection is active and at least one file exists")
+    if (overwrite_protect && any(file.exists(x))) {
+      stop("Overwrite protection is active and at least one file exists")
     }
     return(lapply(x, function(x) con_function(x, open = mode)))
   } else if (is.character(x)) {
-    if (overwrite_protect) {
-      if (any(file.exists(x))) stop("Overwrite protection is active and at least one file exists")
+    if (overwrite_protect && any(file.exists(x))) {
+      stop("Overwrite protection is active and at least one file exists")
     }
     return(con_function(x, open = mode))
   } else {
