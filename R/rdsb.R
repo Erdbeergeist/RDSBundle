@@ -6,7 +6,7 @@
 #' @param current_offset The current offset in the index
 #' @return A list containing the current index table and the current_offset
 #' @import magrittr
-saveObjectToRDSBundle <- function(object, name, bundle_file, index, current_offset) {
+saveObjectToRDSBundle <- function(bundle_file, object, name, index, current_offset) {
   # Save object as binary to raw connection
   raw_con <- rawConnection(raw(0), "wb")
   saveRDS(object, raw_con)
@@ -31,7 +31,7 @@ saveObjectToRDSBundle <- function(object, name, bundle_file, index, current_offs
 #' Save the index to the .rdbs file
 #' @param index The index table
 #' @param bundle_file The bundle_file connection
-saveRDSBundleIndex <- function(index, bundle_file) {
+saveRDSBundleIndex <- function(bundle_file, index) {
   if (!"connection" %in% class(bundle_file)) {
     con <- file(bundle_file, "ab")
   } else {
@@ -93,11 +93,15 @@ readObjectFromRDSBundle <- function(bundle_file, key, index = NULL) {
   return(unserialize(raw_object))
 }
 
+appendRDSBundle <- function(budle_file, objects) {
+
+}
+
 #' Save a list or an environment of objects to a .rdsb file
 #' @param objects either a list or an environment of objects to save to .rdsb file
 #' @param bundle_file filename where to write the bundle_file
 #' @export
-saveRDSBundle <- function(objects, bundle_file) {
+saveRDSBundle <- function(bundle_file, objects) {
   if (!inherits(bundle_file, "connection")) {
     bundle_con <- file(bundle_file, "ab")
   } else {
@@ -160,7 +164,7 @@ saveRDSBundle <- function(objects, bundle_file) {
       },
       .init = list(index = index, current_offset = current_offset)
     )
-  saveRDSBundleIndex(final_accum$index, bundle_con)
+  saveRDSBundleIndex(bundle_con, final_accum$index)
   close(bundle_con)
   close(raw_con)
 }
