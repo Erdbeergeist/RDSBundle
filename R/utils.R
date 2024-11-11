@@ -67,7 +67,7 @@ writeObjectsToRDSBundle <- function(objects,
   stopifnot(length(names_obj) == length(objects))
 
   raw_con <- rawConnection(raw(0), "wb")
-  reduce2flex(names_obj, objects,
+  final_accum <- reduce2flex(names_obj, objects,
     \(accum, name, object) {
       index <- accum$index
       current_offset <- accum$current_offset
