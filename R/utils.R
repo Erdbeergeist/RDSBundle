@@ -67,7 +67,7 @@ writeObjectsToRDSBundle <- function(objects,
   stopifnot(length(names_obj) == length(objects))
 
   raw_con <- rawConnection(raw(0), "wb")
-  final_accum <- reduce2flex(names_obj, objects,
+  reduce2flex(names_obj, objects,
     \(accum, name, object) {
       index <- accum$index
       current_offset <- accum$current_offset
@@ -77,8 +77,7 @@ writeObjectsToRDSBundle <- function(objects,
       writeBin(raw(0), raw_con)
 
       saveRDS(object, raw_con)
-      object_compressed <- rawConnectionValue(raw_con) %>%
-        memCompress()
+      object_compressed <- memCompress(rawConnectionValue(raw_con))
 
       writeBin(object_compressed, bundle_con)
 
