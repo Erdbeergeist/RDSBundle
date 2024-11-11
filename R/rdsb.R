@@ -29,14 +29,11 @@ saveObjectToRDSBundle <- function(bundle_file, object, name, index, current_offs
 }
 
 #' Save the index to the .rdbs file
-#' @param index The index table
 #' @param bundle_file The bundle_file connection
+#' @param index The index table
 saveRDSBundleIndex <- function(bundle_file, index) {
-  if (!"connection" %in% class(bundle_file)) {
-    con <- file(bundle_file, "ab")
-  } else {
-    con <- bundle_file
-  }
+  con <- getConnectionFromString(bundle_file, "ab", file)
+
   # Save the index at the end of the bundle file
   raw_index <- serialize(index, NULL)
   writeBin(raw_index, con)
@@ -48,7 +45,7 @@ saveRDSBundleIndex <- function(bundle_file, index) {
 #' @return The index table
 #' @export
 readRDSBundleIndex <- function(bundle_file) {
-  stopifnot("connection" %in% class(bundle_file))
+  bundle_file <- getConnectionFromString(bundle_file)
   file_name <- summary(bundle_file)$description
   file_size <- file.info(file_name)$size
 
@@ -72,7 +69,7 @@ readRDSBundleIndex <- function(bundle_file) {
 #' @export
 readObjectFromRDSBundle <- function(bundle_file, key, index = NULL) {
   if (missing(index)) {
-    con <- file(bundle_file, "rb")
+    con <- getConnectionFromString(bundle_file, "rb", file)
     index <- readRDSBundleIndex(con)
   } else {
     index <- index
@@ -83,7 +80,7 @@ readObjectFromRDSBundle <- function(bundle_file, key, index = NULL) {
   object_offset <- index[[key]]$offset
   object_size <- index[[key]]$size
 
-  con <- gzfile(bundle_file, "rb")
+  con <- getConnectionFromString(bundle_file, "rb")
   seek(con, object_offset)
   raw_object <- readBin(con, "raw", n = object_size) %>%
     memDecompress(type = "gzip")
@@ -93,21 +90,19 @@ readObjectFromRDSBundle <- function(bundle_file, key, index = NULL) {
   return(unserialize(raw_object))
 }
 
-appendRDSBundle <- function(budle_file, objects) {
-
+appendRDSBundle <- function(bundle_file, objects) {
+  con <- getConnectionFromString(bundle_file)
+  index <- readRDSBundleIndex(con)
 }
 
 #' Save a list or an environment of objects to a .rdsb file
+#' @param bundle_file filename or connection, if given a string will not overwrite,
+#' however if given a connection is happy to overwrite
 #' @param objects either a list or an environment of objects to save to .rdsb file
-#' @param bundle_file filename where to write the bundle_file
 #' @export
 saveRDSBundle <- function(bundle_file, objects) {
-  if (!inherits(bundle_file, "connection")) {
-    bundle_con <- file(bundle_file, "ab")
-  } else {
-    stopifnot(!file.exists(bundle_file))
-    bundle_con <- bundle_file
-  }
+  bundle_con <- getConnectionFromString(bundle_file, "ab", file, TRUE)
+
   current_offset <- 0
   index <- list()
 
@@ -178,7 +173,7 @@ saveRDSBundle <- function(bundle_file, objects) {
 #' @import dplyr
 #' @export
 loadRDSBundle <- function(bundle_file) {
-  bundle_con <- file(bundle_file, "rb")
+  bundle_con <- getConnectionFromString(bundle_file, "rb", file)
   index <- readRDSBundleIndex(bundle_con)
   close(bundle_con)
 
