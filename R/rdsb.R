@@ -42,9 +42,10 @@ saveRDSBundleIndex <- function(bundle_file, index) {
 
 #' Read the Index of a .rdsb File
 #' @param bundle_file A connection to the .rdsb File
+#' @param keep_open keep connection alive ?
 #' @return The index table
 #' @export
-readRDSBundleIndex <- function(bundle_file) {
+readRDSBundleIndex <- function(bundle_file, keep_open = FALSE) {
   bundle_file <- getConnectionFromString(bundle_file, "r+b")
   file_name <- summary(bundle_file)$description
   file_size <- file.info(file_name)$size
@@ -57,7 +58,7 @@ readRDSBundleIndex <- function(bundle_file) {
   seek(bundle_file, file_size - 4 - index_size)
   raw_index <- readBin(bundle_file, "raw", n = index_size)
 
-  close(bundle_file)
+  if (!keep_open) close(bundle_file)
   return(unserialize(raw_index))
 }
 
@@ -90,11 +91,31 @@ readObjectFromRDSBundle <- function(bundle_file, key, index = NULL) {
   return(unserialize(raw_object))
 }
 
-appendRDSBundle <- function(bundle_file, objects) {
-  con <- getConnectionFromString(bundle_file, "ab")
+appendRDSBundle <- function(bundle_file, objects, names) {
+  con <- getConnectionFromString(bundle_file, "a+b")
+  # seek th EOF to read the index size
+  seek(con, where = 4, origin = "end")
+
+  index_size <- readBin(con, "integer", n = 1)
+  content_size <- sum(sapply(index, `[[`, "size"))
+  file_size <- index_size + content_size + 4
+
   index <- readRDSBundleIndex(con)
 
-  seek(con, )
+  # seek to content_size after readRDSBundleIndex the read pointer
+  # will be at the end of the index, in other words a EOF -4
+  # form there we only need to move upwards by the size of the index
+  seek(con, -index_size, origin = "current")
+
+  if (length(objects) > 1) {
+    accum <- list(index = index, current_offset = content_size)
+    reduce2(objects, names,
+      \(init, object, name) {
+        saveObjectToRDSBundle(con, object, name, index, content_size)
+      },
+      .init = accum
+    )
+  }
 }
 
 #' Save a list or an environment of objects to a .rdsb file
@@ -125,42 +146,13 @@ saveRDSBundle <- function(bundle_file, objects) {
     object_names <- names(objects)
   }
 
-  reduce2flex <- function(.x, .y, .f, ...) {
-    if (is.environment(.y)) {
-      reduce2(.x, mget(.x, envir = .y), .f, ...)
-    } else if (is.list(.y)) {
-      reduce2(.x, .y, .f, ...)
-    } else {
-      stop("Must either get a list or an environment as the second argument")
-    }
-  }
-
-  final_accum <-
-    reduce2flex(names(objects), objects,
-      \(accum, name, object) {
-        index <- accum$index
-        current_offset <- accum$current_offset
-
-        # Seek to 0 in connection and replace contents
-        seek(raw_con, 0, "start")
-        writeBin(raw(0), raw_con)
-
-        saveRDS(object, raw_con)
-        object_compressed <- rawConnectionValue(raw_con) %>%
-          memCompress()
-
-        writeBin(object_compressed, bundle_con)
-
-        object_size <- length(object_compressed)
-        index[[name]] <- list(offset = current_offset, size = object_size)
-
-        # Calculate new offset for next object
-        current_offset <- current_offset + object_size
-
-        return(list(index = index, current_offset = current_offset))
-      },
-      .init = list(index = index, current_offset = current_offset)
-    )
+  final_accum <- writeObjectsToRDSBundle(
+    objects,
+    bundle_con,
+    index,
+    current_offset,
+    object_names
+  )
   saveRDSBundleIndex(bundle_con, final_accum$index)
   close(bundle_con)
   close(raw_con)
