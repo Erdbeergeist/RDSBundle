@@ -45,7 +45,7 @@ saveRDSBundleIndex <- function(bundle_file, index) {
 #' @return The index table
 #' @export
 readRDSBundleIndex <- function(bundle_file) {
-  bundle_file <- getConnectionFromString(bundle_file)
+  bundle_file <- getConnectionFromString(bundle_file, "r+b")
   file_name <- summary(bundle_file)$description
   file_size <- file.info(file_name)$size
 
@@ -91,8 +91,10 @@ readObjectFromRDSBundle <- function(bundle_file, key, index = NULL) {
 }
 
 appendRDSBundle <- function(bundle_file, objects) {
-  con <- getConnectionFromString(bundle_file)
+  con <- getConnectionFromString(bundle_file, "ab")
   index <- readRDSBundleIndex(con)
+
+  seek(con, )
 }
 
 #' Save a list or an environment of objects to a .rdsb file
