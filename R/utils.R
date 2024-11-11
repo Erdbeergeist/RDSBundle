@@ -10,7 +10,7 @@
 getConnectionFromString <- function(x,
                                     mode = "a+b",
                                     con_function = gzfile,
-                                    overwrite_protect = TRUE) {
+                                    overwrite_protect = FALSE) {
   if (inherits(x, "connection")) {
     return(x)
   }
