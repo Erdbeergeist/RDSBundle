@@ -66,12 +66,12 @@ writeObjectsToRDSBundle <- function(objects,
 
   stopifnot(length(names_obj) == length(objects))
 
-  raw_con <- rawConnection(raw(0), "wb")
   final_accum <- reduce2flex(names_obj, objects,
     \(accum, name, object) {
       index <- accum$index
       current_offset <- accum$current_offset
 
+      raw_con <- rawConnection(raw(0), "wb")
       # Seek to 0 in connection and replace contents
       seek(raw_con, 0, "start")
       writeBin(raw(0), raw_con)
@@ -91,6 +91,5 @@ writeObjectsToRDSBundle <- function(objects,
     },
     .init = list(index = index, current_offset = current_offset)
   )
-  close(raw_con)
   return(final_accum)
 }

@@ -33,7 +33,7 @@ saveObjectToRDSBundle <- function(bundle_file, object, name, index, current_offs
 #' @param index The index table
 saveRDSBundleIndex <- function(bundle_file, index) {
   con <- getConnectionFromString(bundle_file, "ab", file)
-
+  seek(con, rw = "w", where = 0, origin = "end")
   # Save the index at the end of the bundle file
   raw_index <- serialize(index, NULL)
   writeBin(raw_index, con)
@@ -91,31 +91,29 @@ readObjectFromRDSBundle <- function(bundle_file, key, index = NULL) {
   return(unserialize(raw_object))
 }
 
-appendRDSBundle <- function(bundle_file, objects, names) {
-  con <- getConnectionFromString(bundle_file, "a+b")
+appendRDSBundle <- function(bundle_file, objects) {
+  con <- getConnectionFromString(bundle_file, "r+b", file)
   # seek th EOF to read the index size
-  seek(con, where = 4, origin = "end")
+  seek(con, rw = "r", where = -4, origin = "end")
 
   index_size <- readBin(con, "integer", n = 1)
+  index <- readRDSBundleIndex(con, keep_open = TRUE)
   content_size <- sum(sapply(index, `[[`, "size"))
   file_size <- index_size + content_size + 4
 
-  index <- readRDSBundleIndex(con)
-
   # seek to content_size after readRDSBundleIndex the read pointer
-  # will be at the end of the index, in other words a EOF -4
+  # will be at the end of the index, in other words at EOF -4
   # form there we only need to move upwards by the size of the index
-  seek(con, -index_size, origin = "current")
-
-  if (length(objects) > 1) {
-    accum <- list(index = index, current_offset = content_size)
-    reduce2(objects, names,
-      \(init, object, name) {
-        saveObjectToRDSBundle(con, object, name, index, content_size)
-      },
-      .init = accum
-    )
+  seek(con, rw = "w", where = -(index_size + 4), origin = "end")
+  if (is.environment(objects)) {
+    object_names <- ls(objects)
+  } else {
+    object_names <- names(objects)
   }
+  final_accum <- writeObjectsToRDSBundle(objects, con, index, content_size, object_names)
+  saveRDSBundleIndex(con, final_accum$index)
+  flush(con)
+  close(con)
 }
 
 #' Save a list or an environment of objects to a .rdsb file
@@ -138,8 +136,6 @@ saveRDSBundle <- function(bundle_file, objects) {
     }
   }
 
-  raw_con <- rawConnection(raw(0), "wb")
-
   if (is.environment(objects)) {
     object_names <- ls(objects)
   } else {
@@ -155,7 +151,6 @@ saveRDSBundle <- function(bundle_file, objects) {
   )
   saveRDSBundleIndex(bundle_con, final_accum$index)
   close(bundle_con)
-  close(raw_con)
 }
 
 #' Load the whole .rdsb file
