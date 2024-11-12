@@ -2,7 +2,7 @@
 #'
 #' @param x character or chrarcter vector to turn into a connection
 #' @param mode to open the file(s) in
-#' @param con_funciton the funciton to open the file(s) with
+#' @param con_function the funciton to open the file(s) with
 #' @param overwrite_protect bool whether to saveguard against overwriting existing files
 #'
 #' @return a connection or vector of connections
@@ -34,6 +34,7 @@ getConnectionFromString <- function(x,
 #' @param .x a list
 #' @param .y must be a list or an environment
 #' @param .f the function to be reduced over .x and .y
+#' @param ... passed on to reduce2
 #' @return reduce2(.x, .y, .f, ...)
 #' @import purrr
 reduce2flex <- function(.x, .y, .f, ...) {
@@ -108,6 +109,12 @@ writeObjectsToRDSBundle <- function(objects,
   return(final_accum)
 }
 
+#' Returns information about the layout of the rdsb file.
+#' Note that a failed size check usually just means that at some point an append with a new
+#' object smaller than the current index_table was performed. In this case the low level write function
+#' skips to EOF for writing.
+#' @param bundle_file the filename of the rdsb file
+#' @export
 getRDSBundleLayout <- function(bundle_file) {
   con <- getConnectionFromString(bundle_file, mode = "r+b", con_function = file)
 

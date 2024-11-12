@@ -5,13 +5,11 @@
 #' @param index The index table to upadate
 #' @param current_offset The current offset in the index
 #' @return A list containing the current index table and the current_offset
-#' @import magrittr
 saveObjectToRDSBundle <- function(bundle_file, object, name, index, current_offset) {
   # Save object as binary to raw connection
   raw_con <- rawConnection(raw(0), "wb")
   saveRDS(object, raw_con)
-  serialized_object <- rawConnectionValue(raw_con) %>%
-    memCompress()
+  serialized_object <- memCompress(rawConnectionValue(raw_con))
   close(raw_con)
 
   # Bundlefile
@@ -128,7 +126,7 @@ saveRDSBundle <- function(bundle_file, objects) {
 
   # Check if object names are unique if we are not given a list and not an environment
   if (!is.environment(objects)) {
-    if (class(objects) != "list") {
+    if (inherits(objects, "list")) {
       stop("Objects must either be a named list or an environment")
     } else {
       stopifnot(n_distinct(names(objects)) == length(objects))
@@ -160,6 +158,7 @@ saveRDSBundle <- function(bundle_file, objects) {
 #' @return the objects as a list
 #' @import furrr
 #' @import dplyr
+#' @import purrr
 #' @export
 loadRDSBundle <- function(bundle_file) {
   bundle_con <- getConnectionFromString(bundle_file, "rb", file)
@@ -167,7 +166,7 @@ loadRDSBundle <- function(bundle_file) {
   close(bundle_con)
 
   objects <- future_map(names(index), ~ readObjectFromRDSBundle(bundle_file, .x, index)) %>%
-    set_names(names(index))
+    purrr::set_names(names(index))
 
   return(objects)
 }
