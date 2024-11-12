@@ -2,15 +2,15 @@
 % Please edit documentation in R/rdsb.R
 \name{saveRDSBundleIndex}
 \alias{saveRDSBundleIndex}
-\title{Save the index to the .rdbs file}
+\title{Save the index to the .rdbs file.}
 \usage{
-saveRDSBundleIndex(index, bundle_file)
+saveRDSBundleIndex(bundle_file, index)
 }
 \arguments{
-\item{index}{The index table}
-
 \item{bundle_file}{The bundle_file connection}
+
+\item{index}{The index table}
 }
 \description{
-Save the index to the .rdbs file
+Save the index to the .rdbs file.
 }

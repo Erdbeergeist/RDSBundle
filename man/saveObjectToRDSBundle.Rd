@@ -4,14 +4,14 @@
 \alias{saveObjectToRDSBundle}
 \title{Save an object to a .rdsb File}
 \usage{
-saveObjectToRDSBundle(object, name, bundle_file, index, current_offset)
+saveObjectToRDSBundle(bundle_file, object, name, index, current_offset)
 }
 \arguments{
+\item{bundle_file}{The path to the bundle_file}
+
 \item{object}{The object to save}
 
 \item{name}{The name under which to store the object}
-
-\item{bundle_file}{The path to the bundle_file}
 
 \item{index}{The index table to upadate}
 

@@ -4,10 +4,12 @@
 \alias{readRDSBundleIndex}
 \title{Read the Index of a .rdsb File}
 \usage{
-readRDSBundleIndex(bundle_file)
+readRDSBundleIndex(bundle_file, keep_open = FALSE)
 }
 \arguments{
 \item{bundle_file}{A connection to the .rdsb File}
+
+\item{keep_open}{keep connection alive ?}
 }
 \value{
 The index table

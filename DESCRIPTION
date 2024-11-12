@@ -1,6 +1,6 @@
 Package: rdsb
 Title: Defines .rdsb Format
-Version: 0.0.0.1
+Version: 0.0.0.2
 Authors@R: 
     person("Lukas", "Mittnacht", , "luxmitges@web.de", role = c("aut", "cre"))
 Description: Allows saving lists or environments to .rdsb (RDSBundle) Files.
@@ -12,5 +12,5 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
 Imports:
   dplyr,
-  furrr,
-  magrittr
+  purrr,
+  furrr

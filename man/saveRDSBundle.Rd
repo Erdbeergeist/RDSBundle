@@ -4,12 +4,13 @@
 \alias{saveRDSBundle}
 \title{Save a list or an environment of objects to a .rdsb file}
 \usage{
-saveRDSBundle(objects, bundle_file)
+saveRDSBundle(bundle_file, objects)
 }
 \arguments{
-\item{objects}{either a list or an environment of objects to save to .rdsb file}
+\item{bundle_file}{filename or connection, if given a string will not overwrite,
+however if given a connection is happy to overwrite}
 
-\item{bundle_file}{filename where to write the bundle_file}
+\item{objects}{either a list or an environment of objects to save to .rdsb file}
 }
 \description{
 Save a list or an environment of objects to a .rdsb file
