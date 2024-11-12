@@ -28,7 +28,7 @@ saveObjectToRDSBundle <- function(bundle_file, object, name, index, current_offs
   return(list(index = index, current_offset = current_offset))
 }
 
-#' Save the index to the .rdbs file
+#' Save the index to the .rdbs file.
 #' @param bundle_file The bundle_file connection
 #' @param index The index table
 saveRDSBundleIndex <- function(bundle_file, index) {
@@ -101,16 +101,15 @@ appendRDSBundle <- function(bundle_file, objects) {
   content_size <- sum(sapply(index, `[[`, "size"))
   file_size <- index_size + content_size + 4
 
-  # seek to content_size after readRDSBundleIndex the read pointer
-  # will be at the end of the index, in other words at EOF -4
-  # form there we only need to move upwards by the size of the index
+  # move write pointer to the start of the index table
   seek(con, rw = "w", where = -(index_size + 4), origin = "end")
+
   if (is.environment(objects)) {
     object_names <- ls(objects)
   } else {
     object_names <- names(objects)
   }
-  final_accum <- writeObjectsToRDSBundle(objects, con, index, content_size, object_names)
+  final_accum <- writeObjectsToRDSBundle(objects, con, index, content_size, index_size, object_names)
   saveRDSBundleIndex(con, final_accum$index)
   flush(con)
   close(con)
@@ -147,7 +146,8 @@ saveRDSBundle <- function(bundle_file, objects) {
     bundle_con,
     index,
     current_offset,
-    object_names
+    index_size = 0,
+    names_obj = object_names
   )
   saveRDSBundleIndex(bundle_con, final_accum$index)
   close(bundle_con)

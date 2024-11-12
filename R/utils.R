@@ -52,6 +52,8 @@ reduce2flex <- function(.x, .y, .f, ...) {
 #' @param bundle_con connction to write to
 #' @param index the index table
 #' @param current_offset where the read pointer is at. DOES NOT SEEK TO THIS LOCATION
+#' @param index_size (optional) size of the index table before writing. Must be passed if
+#' appending to file otherwise correct alignment can not be guaranteed
 #' @param names_obj (optional) if missing usees the names of the objects list/env
 #' @return the final accumulated index and current_offset in a named list
 #' @import purrr
@@ -59,6 +61,7 @@ writeObjectsToRDSBundle <- function(objects,
                                     bundle_con,
                                     index,
                                     current_offset,
+                                    index_size = 0,
                                     names_obj = NA) {
   if (any(is.na(names_obj)) || any(missing(names_obj))) {
     names_obj <- names(objects)
@@ -68,9 +71,6 @@ writeObjectsToRDSBundle <- function(objects,
 
   final_accum <- reduce2flex(names_obj, objects,
     \(accum, name, object) {
-      index <- accum$index
-      current_offset <- accum$current_offset
-
       raw_con <- rawConnection(raw(0), "wb")
       # Seek to 0 in connection and replace contents
       seek(raw_con, 0, "start")
@@ -79,8 +79,22 @@ writeObjectsToRDSBundle <- function(objects,
       saveRDS(object, raw_con)
       object_compressed <- memCompress(rawConnectionValue(raw_con))
 
-      writeBin(object_compressed, bundle_con)
+      if (length(object_compressed) == 0) {
+        print("Zero length object detected, append skipped")
+        return(accum)
+      }
 
+      if ((current_offset == accum$current_offset) && (length(object_compressed) < index_size + 1e-1)) {
+        print("Object smaller than index table, skpping over existing table")
+        seek(bundle_con, rw = "w", where = 0, origin = "end")
+        accum$current_offset <- seek(bundle_con, rw = "w")
+      }
+
+      index <- accum$index
+      current_offset <- accum$current_offset
+
+      writeBin(object_compressed, bundle_con)
+      flush(bundle_con)
       object_size <- length(object_compressed)
       index[[name]] <- list(offset = current_offset, size = object_size)
 
@@ -92,4 +106,25 @@ writeObjectsToRDSBundle <- function(objects,
     .init = list(index = index, current_offset = current_offset)
   )
   return(final_accum)
+}
+
+getRDSBundleLayout <- function(bundle_file) {
+  con <- getConnectionFromString(bundle_file, mode = "r+b", con_function = file)
+
+  file_name <- summary(con)$description
+  file_size <- file.size(file_name)
+
+  cat("Filename: ", file_name, "\n")
+  cat("Filesize: ", file_size, "\n")
+
+  seek(con, rw = "r", where = -4, origin = "end")
+  index_size <- readBin(con, "integer", n = 1)
+  index <- readRDSBundleIndex(con, keep_open = TRUE)
+  content_size <- sum(sapply(index, `[[`, "size"))
+
+  cat("Indexsize: ", index_size, "\n")
+  cat("Contentsize: ", content_size, "\n")
+  cat("Size check :", 4 + index_size + content_size == file_size, "\n")
+  print(index)
+  close(con)
 }
