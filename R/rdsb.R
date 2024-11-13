@@ -89,6 +89,14 @@ readObjectFromRDSBundle <- function(bundle_file, key, index = NULL) {
   return(unserialize(raw_object))
 }
 
+#' Append objects to a RDSBundle file. If the first objects size is less than
+#' the size of the index table of the existing file, instead of overwriting the
+#' index table it is left in place and the new objects are appended at EOF.
+#' This can be verified by using getRDSBundleLayout() where the size check will
+#' fail
+#' @param bundle_file the existing bundle file to append to
+#' @param objects a list or an environment of objects to append
+#' @export
 appendRDSBundle <- function(bundle_file, objects) {
   con <- getConnectionFromString(bundle_file, "r+b", file)
   # seek th EOF to read the index size
