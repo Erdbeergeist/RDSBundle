@@ -38,7 +38,7 @@ saveRDSBundleIndex <- function(bundle_file, index) {
   writeBin(as.integer(length(raw_index)), con)
 }
 
-#' Read the Index of a .rdsb File
+#' Read the Index of a .rdsb Filetesting
 #' @param bundle_file A connection to the .rdsb File
 #' @param keep_open keep connection alive ?
 #' @return The index table
@@ -134,7 +134,7 @@ saveRDSBundle <- function(bundle_file, objects) {
 
   # Check if object names are unique if we are not given a list and not an environment
   if (!is.environment(objects)) {
-    if (inherits(objects, "list")) {
+    if (!inherits(objects, "list")) {
       stop("Objects must either be a named list or an environment")
     } else {
       stopifnot(n_distinct(names(objects)) == length(objects))
