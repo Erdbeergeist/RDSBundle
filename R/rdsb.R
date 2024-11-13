@@ -38,7 +38,7 @@ saveRDSBundleIndex <- function(bundle_file, index) {
   writeBin(as.integer(length(raw_index)), con)
 }
 
-#' Read the Index of a .rdsb Filetesting
+#' Read the Index of a .rdsb File
 #' @param bundle_file A connection to the .rdsb File
 #' @param keep_open keep connection alive ?
 #' @return The index table

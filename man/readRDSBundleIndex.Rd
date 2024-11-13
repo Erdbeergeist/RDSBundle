@@ -2,7 +2,7 @@
 % Please edit documentation in R/rdsb.R
 \name{readRDSBundleIndex}
 \alias{readRDSBundleIndex}
-\title{Read the Index of a .rdsb File}
+\title{Read the Index of a .rdsb Filetesting}
 \usage{
 readRDSBundleIndex(bundle_file, keep_open = FALSE)
 }
@@ -15,5 +15,5 @@ readRDSBundleIndex(bundle_file, keep_open = FALSE)
 The index table
 }
 \description{
-Read the Index of a .rdsb File
+Read the Index of a .rdsb Filetesting
 }
