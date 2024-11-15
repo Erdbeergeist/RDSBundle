@@ -24,9 +24,7 @@ fn decompress_data(input: &[u8]) -> std::io::Result<Vec<u8>> {
 fn write_data_object(file_path: String, ser_obj: Robj, offset: usize) -> extendr_api::Result<Robj> {
     let serialized_object: Vec<u8> = ser_obj.try_into().unwrap();
 
-    let compressed_object = compress_data(&serialized_object);
-
-    let compressed_object = match compressed_object {
+    let compressed_object = match compress_data(&serialized_object) {
         Ok(f) => f,
         Err(e) => {
             return Err(extendr_api::Error::from(format!(
@@ -36,13 +34,12 @@ fn write_data_object(file_path: String, ser_obj: Robj, offset: usize) -> extendr
         }
     };
 
-    let mut file = File::options()
+    let mut file = match File::options()
         .read(true)
         .write(true)
         .create(true)
-        .open(&file_path);
-
-    let mut file = match file {
+        .open(&file_path)
+    {
         Ok(f) => f,
         Err(e) => {
             return Err(extendr_api::Error::from(format!(
