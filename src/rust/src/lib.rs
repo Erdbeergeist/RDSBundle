@@ -96,13 +96,17 @@ fn read_data_object(file_path: String, offset: u64, size: usize) -> extendr_api:
         Ok(_) => {}
         Err(e) => {
             return Err(extendr_api::Error::from(format!(
-                "Error reading from file: {}",
+                "Error seeking in file: {}",
                 e
             )))
         }
     };
 
-    let mut compressed_object = vec![0u8; size];
+    //let mut compressed_object = vec![0u8; size];
+    let mut compressed_object = Vec::with_capacity(size);
+    unsafe {
+        compressed_object.set_len(size);
+    }
 
     match reader.read_exact(&mut compressed_object) {
         Ok(_) => {}
@@ -126,6 +130,63 @@ fn read_data_object(file_path: String, offset: u64, size: usize) -> extendr_api:
     Ok(Robj::from(decompressed_object))
 }
 
+#[extendr]
+fn read_data_object_to_R_buffer(
+    mut r_buf: Robj,
+    file_path: String,
+    offset: u64,
+    size: usize,
+) -> extendr_api::Result<Robj> {
+    if !r_buf.is_raw() {
+        return Err(extendr_api::Error::Other(
+            "Provided R object is not a raw vector".into(),
+        ));
+    }
+    let file = match File::options().read(true).open(&file_path) {
+        Ok(f) => f,
+        Err(e) => {
+            return Err(extendr_api::Error::from(format!(
+                "Error opening file: {}",
+                e
+            )))
+        }
+    };
+
+    let mut reader = BufReader::with_capacity(size * 2, file);
+
+    match reader.seek(SeekFrom::Start(offset)) {
+        Ok(_) => {}
+        Err(e) => {
+            return Err(extendr_api::Error::from(format!(
+                "Error seeking in file: {}",
+                e
+            )))
+        }
+    };
+
+    let mut compressed_object = r_buf.as_raw_slice_mut().unwrap();
+
+    match reader.read_exact(&mut compressed_object) {
+        Ok(_) => {}
+        Err(e) => {
+            return Err(extendr_api::Error::from(format!(
+                "Error reading from file: {}",
+                e
+            )))
+        }
+    };
+
+    let decompressed_object = match decompress_data(&compressed_object) {
+        Ok(f) => f,
+        Err(e) => {
+            return Err(extendr_api::Error::from(format!(
+                "Error decompressing: {}",
+                e
+            )))
+        }
+    };
+    Ok(Robj::from(offset))
+}
 // Macro to generate exports.
 // This ensures exported functions are registered with R.
 // See corresponding C code in `entrypoint.c`.
@@ -133,4 +194,5 @@ extendr_module! {
     mod rdsb;
     fn write_data_object;
     fn read_data_object;
+    fn read_data_object_to_R_buffer;
 }
