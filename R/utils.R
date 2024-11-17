@@ -103,7 +103,12 @@ writeObjectsToRDSBundle <- function(objects,
         flush(bundle_con)
         object_size <- length(object_compressed)
       } else if (getOption("rdsBundle.write_backend") == "rust") {
-        object_size <- write_data_object(file_name, object_raw, accum$current_offset)
+        if ((current_offset == accum$current_offset)) {
+          object_size <- write_data_object(file_name, object_raw, accum$current_offset, index_size + 4)
+          accum$current_offset <- current_offset + ifelse(object_size <= index_size, index_size + 4, 0)
+        } else {
+          object_size <- write_data_object(file_name, object_raw, accum$current_offset, -1)
+        }
       }
       index <- accum$index
       current_offset <- accum$current_offset

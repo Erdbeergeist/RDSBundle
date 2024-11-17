@@ -25,6 +25,7 @@ fn write_data_object(
     file_path: String,
     ser_obj: Vec<u8>,
     offset: u64,
+    index_size: i16,
 ) -> extendr_api::Result<Robj> {
     let serialized_object: Vec<u8> = ser_obj.try_into().unwrap();
 
@@ -54,16 +55,30 @@ fn write_data_object(
     };
 
     let mut writer = BufWriter::with_capacity(compressed_object.len() * 2, file);
-    match writer.seek(SeekFrom::Start(offset as u64)) {
-        Ok(f) => f,
-        Err(e) => {
-            return Err(extendr_api::Error::from(format!(
-                "Error seeking in file: {}",
-                e
-            )))
-        }
-    };
 
+    // if we are here then index size was not passed as negative indicating
+    // the first append, check if we should skip the existing index table
+    if (compressed_object.len() as i16 <= index_size) & (index_size > 0) {
+        match writer.seek(SeekFrom::End(0)) {
+            Ok(f) => println!("Index > compressed object, seeking to {}", f),
+            Err(e) => {
+                return Err(extendr_api::Error::from(format!(
+                    "Error seeking in file: {}",
+                    e
+                )))
+            }
+        };
+    } else {
+        match writer.seek(SeekFrom::Start(offset as u64)) {
+            Ok(f) => f,
+            Err(e) => {
+                return Err(extendr_api::Error::from(format!(
+                    "Error seeking in file: {}",
+                    e
+                )))
+            }
+        };
+    }
     match writer.write_all(&compressed_object) {
         Ok(f) => f,
         Err(e) => {
@@ -131,7 +146,6 @@ fn read_data_object_to_R_buffer(
     file_path: String,
     offset: u64,
     size: usize,
-    raw_size: usize,
 ) -> extendr_api::Result<Robj> {
     if !r_buf.is_raw() {
         return Err(extendr_api::Error::Other(
