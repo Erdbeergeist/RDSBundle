@@ -9,7 +9,9 @@ saveObjectToRDSBundle <- function(bundle_file, object, name, index, current_offs
   # Save object as binary to raw connection
   raw_con <- rawConnection(raw(0), "wb")
   saveRDS(object, raw_con)
-  serialized_object <- memCompress(rawConnectionValue(raw_con))
+  serialized_object <- rawConnectionValue(raw_con)
+  raw_size <- length(serialized_object)
+  serialized_object <- memCompress(serialized_object)
   close(raw_con)
 
   # Bundlefile
@@ -18,7 +20,7 @@ saveObjectToRDSBundle <- function(bundle_file, object, name, index, current_offs
 
   # Update Index table
   size <- length(serialized_object)
-  index[[name]] <- list(offset = current_offset, size = size)
+  index[[name]] <- list(offset = current_offset, size = size, raw_size = raw_size)
   current_offset <- current_offset + size
 
   close(b_con)
@@ -78,6 +80,7 @@ readObjectFromRDSBundle <- function(bundle_file, key, index = NULL) {
 
   object_offset <- index[[key]]$offset
   object_size <- index[[key]]$size
+  object_raw_size <- index[[key]]$raw_size
 
   con <- getConnectionFromString(bundle_file, "rb")
   seek(con, object_offset)

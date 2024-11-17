@@ -78,7 +78,10 @@ writeObjectsToRDSBundle <- function(objects,
       writeBin(raw(0), raw_con)
 
       saveRDS(object, raw_con)
-      object_compressed <- memCompress(rawConnectionValue(raw_con))
+      object_raw <- rawConnectionValue(raw_con)
+      object_raw_size <- length(object_raw)
+      object_compressed <- memCompress(object_raw)
+
 
       if (length(object_compressed) == 0) {
         print("Zero length object detected, append skipped")
@@ -97,7 +100,7 @@ writeObjectsToRDSBundle <- function(objects,
       writeBin(object_compressed, bundle_con)
       flush(bundle_con)
       object_size <- length(object_compressed)
-      index[[name]] <- list(offset = current_offset, size = object_size)
+      index[[name]] <- list(offset = current_offset, size = object_size, raw_size = object_raw_size)
 
       # Calculate new offset for next object
       current_offset <- current_offset + object_size
