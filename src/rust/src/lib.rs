@@ -24,7 +24,7 @@ fn decompress_data(input: &[u8]) -> std::io::Result<Vec<u8>> {
 fn write_data_object(
     file_path: String,
     ser_obj: Vec<u8>,
-    offset: usize,
+    offset: u64,
 ) -> extendr_api::Result<Robj> {
     let serialized_object: Vec<u8> = ser_obj.try_into().unwrap();
 
@@ -54,7 +54,6 @@ fn write_data_object(
     };
 
     let mut writer = BufWriter::with_capacity(compressed_object.len() * 2, file);
-
     match writer.seek(SeekFrom::Start(offset as u64)) {
         Ok(f) => f,
         Err(e) => {
@@ -102,11 +101,7 @@ fn read_data_object(file_path: String, offset: u64, size: usize) -> extendr_api:
         }
     };
 
-    //let mut compressed_object = vec![0u8; size];
-    let mut compressed_object = Vec::with_capacity(size);
-    unsafe {
-        compressed_object.set_len(size);
-    }
+    let mut compressed_object = vec![0u8; size];
 
     match reader.read_exact(&mut compressed_object) {
         Ok(_) => {}
@@ -136,6 +131,7 @@ fn read_data_object_to_R_buffer(
     file_path: String,
     offset: u64,
     size: usize,
+    raw_size: usize,
 ) -> extendr_api::Result<Robj> {
     if !r_buf.is_raw() {
         return Err(extendr_api::Error::Other(

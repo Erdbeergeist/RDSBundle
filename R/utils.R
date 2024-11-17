@@ -68,6 +68,8 @@ writeObjectsToRDSBundle <- function(objects,
     names_obj <- names(objects)
   }
 
+  file_name <- summary(bundle_con)$description
+
   stopifnot(length(names_obj) == length(objects))
 
   final_accum <- reduce2flex(names_obj, objects,
@@ -80,26 +82,31 @@ writeObjectsToRDSBundle <- function(objects,
       saveRDS(object, raw_con)
       object_raw <- rawConnectionValue(raw_con)
       object_raw_size <- length(object_raw)
-      object_compressed <- memCompress(object_raw)
 
 
-      if (length(object_compressed) == 0) {
-        print("Zero length object detected, append skipped")
-        return(accum)
+      if (getOption("rdsBundle.write_backend") == "R") {
+        object_compressed <- memCompress(object_raw)
+
+
+        if (length(object_compressed) == 0) {
+          print("Zero length object detected, append skipped")
+          return(accum)
+        }
+
+        if ((current_offset == accum$current_offset) && (length(object_compressed) < index_size + 1e-1)) {
+          print("Object smaller than index table, skpping over existing table")
+          seek(bundle_con, rw = "w", where = 0, origin = "end")
+          accum$current_offset <- seek(bundle_con, rw = "w")
+        }
+
+        writeBin(object_compressed, bundle_con)
+        flush(bundle_con)
+        object_size <- length(object_compressed)
+      } else if (getOption("rdsBundle.write_backend") == "rust") {
+        object_size <- write_data_object(file_name, object_raw, accum$current_offset)
       }
-
-      if ((current_offset == accum$current_offset) && (length(object_compressed) < index_size + 1e-1)) {
-        print("Object smaller than index table, skpping over existing table")
-        seek(bundle_con, rw = "w", where = 0, origin = "end")
-        accum$current_offset <- seek(bundle_con, rw = "w")
-      }
-
       index <- accum$index
       current_offset <- accum$current_offset
-
-      writeBin(object_compressed, bundle_con)
-      flush(bundle_con)
-      object_size <- length(object_compressed)
       index[[name]] <- list(offset = current_offset, size = object_size, raw_size = object_raw_size)
 
       # Calculate new offset for next object

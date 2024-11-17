@@ -82,12 +82,16 @@ readObjectFromRDSBundle <- function(bundle_file, key, index = NULL) {
   object_size <- index[[key]]$size
   object_raw_size <- index[[key]]$raw_size
 
-  con <- getConnectionFromString(bundle_file, "rb")
-  seek(con, object_offset)
-  raw_object <- readBin(con, "raw", n = object_size) %>%
-    memDecompress(type = "gzip")
+  if (getOption("rdsBundle.read_backend") == "R") {
+    con <- getConnectionFromString(bundle_file, "rb")
+    seek(con, object_offset)
+    raw_object <- readBin(con, "raw", n = object_size) %>%
+      memDecompress(type = "gzip")
 
-  close(con)
+    close(con)
+  } else if (getOption("rdsBundle.read_backend") == "rust") {
+    raw_object <- read_data_object(bundle_file, object_offset, object_size)
+  }
 
   return(unserialize(raw_object))
 }
