@@ -138,3 +138,26 @@ getRDSBundleLayout <- function(bundle_file) {
   print(index)
   close(con)
 }
+
+#' Set rdsBundle Options
+#' @param ... Named options to set
+#' @param reset resets all options to default values if TRUE
+#' @export
+rdsBundleOptions <- function(..., reset = FASLE) {
+  default_options <- list(
+    rdsBundle.backend = "rust",
+    rdsBundle.write_backend = "rust",
+    rdsBundle.read_backend = "rust"
+  )
+
+  if (reset) {
+    options(default_options)
+    return(invisible())
+  }
+
+  dots <- list(...)
+  names(dots) <- paste0("rdsBundel.", names(dots))
+  options(dots)
+
+  return(invisible())
+}

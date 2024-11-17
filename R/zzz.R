@@ -1,5 +1,7 @@
-# .onload <- function(libname, pkgname) {
-#  if (!isGeneric("pluck")) {
-#    setGeneric("pluck", function(.x, ...) standardGeneric("pluck"))
-#  }
-# }
+.onload <- function(libname, pkgname) {
+  # if (!isGeneric("pluck")) {
+  #   setGeneric("pluck", function(.x, ...) standardGeneric("pluck"))
+  # }
+
+  rdsBundleOptions(reset = TRUE)
+}
