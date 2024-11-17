@@ -1,7 +1,6 @@
 use extendr_api::prelude::*;
 use std::fs::File;
-use std::io::{Read, Seek, SeekFrom, Write};
-use std::os::unix::fs::FileExt;
+use std::io::{BufReader, BufWriter, Read, Seek, SeekFrom, Write};
 use zstd::stream::{copy_decode, copy_encode};
 
 //Compress stream
@@ -39,7 +38,7 @@ fn write_data_object(
         }
     };
 
-    let mut file = match File::options()
+    let file = match File::options()
         .read(true)
         .write(true)
         .create(true)
@@ -54,27 +53,50 @@ fn write_data_object(
         }
     };
 
-    file.seek(SeekFrom::Start(offset as u64))
-        .map_err(|e| Robj::from(format!("Error seeking in file: {}", e)));
+    let mut writer = BufWriter::with_capacity(compressed_object.len() * 2, file);
 
-    file.write_all(&compressed_object)
-        .map_err(|e| Robj::from(format!("Error writing in file: {}", e)));
+    match writer.seek(SeekFrom::Start(offset as u64)) {
+        Ok(f) => f,
+        Err(e) => {
+            return Err(extendr_api::Error::from(format!(
+                "Error seeking in file: {}",
+                e
+            )))
+        }
+    };
+
+    match writer.write_all(&compressed_object) {
+        Ok(f) => f,
+        Err(e) => {
+            return Err(extendr_api::Error::from(format!(
+                "Error writing to file: {}",
+                e
+            )))
+        }
+    };
 
     Ok(Robj::from(compressed_object.len()))
 }
 
 #[extendr]
-fn read_data_object(file_path: String, offset: usize, size: usize) -> extendr_api::Result<Robj> {
-    let mut file = match File::options()
-        .read(true)
-        .write(true)
-        .create(true)
-        .open(&file_path)
-    {
+fn read_data_object(file_path: String, offset: u64, size: usize) -> extendr_api::Result<Robj> {
+    let file = match File::options().read(true).open(&file_path) {
         Ok(f) => f,
         Err(e) => {
             return Err(extendr_api::Error::from(format!(
                 "Error opening file: {}",
+                e
+            )))
+        }
+    };
+
+    let mut reader = BufReader::with_capacity(size * 2, file);
+
+    match reader.seek(SeekFrom::Start(offset)) {
+        Ok(_) => {}
+        Err(e) => {
+            return Err(extendr_api::Error::from(format!(
+                "Error reading from file: {}",
                 e
             )))
         }
@@ -82,7 +104,7 @@ fn read_data_object(file_path: String, offset: usize, size: usize) -> extendr_ap
 
     let mut compressed_object = vec![0u8; size];
 
-    match file.read_exact(&mut compressed_object) {
+    match reader.read_exact(&mut compressed_object) {
         Ok(_) => {}
         Err(e) => {
             return Err(extendr_api::Error::from(format!(
