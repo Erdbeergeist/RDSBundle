@@ -14,3 +14,4 @@ Imports:
   dplyr,
   purrr,
   furrr
+Config/rextendr/version: 0.3.1
