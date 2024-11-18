@@ -23,11 +23,11 @@ fn decompress_data(input: &[u8]) -> std::io::Result<Vec<u8>> {
 #[extendr]
 fn write_data_object(
     file_path: String,
-    ser_obj: Vec<u8>,
+    mut ser_obj: Robj,
     offset: u64,
     index_size: i16,
 ) -> extendr_api::Result<Robj> {
-    let serialized_object: Vec<u8> = ser_obj.try_into().unwrap();
+    let serialized_object: &[u8] = ser_obj.as_raw_slice_mut().unwrap();
 
     let compressed_object = match compress_data(&serialized_object) {
         Ok(f) => f,
