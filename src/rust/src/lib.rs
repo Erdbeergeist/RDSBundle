@@ -142,17 +142,17 @@ fn read_data_object(file_path: String, offset: u64, size: usize) -> extendr_api:
 
 #[extendr]
 fn read_data_object_to_R_buffer(
-    mut r_buf: Robj,
     file_path: String,
+    mut r_buf: Robj,
     offset: u64,
-    size: usize,
+    size: u64,
 ) -> extendr_api::Result<Robj> {
     if !r_buf.is_raw() {
         return Err(extendr_api::Error::Other(
             "Provided R object is not a raw vector".into(),
         ));
     }
-    let file = match File::options().read(true).open(&file_path) {
+    let mut file = match File::options().read(true).open(&file_path) {
         Ok(f) => f,
         Err(e) => {
             return Err(extendr_api::Error::from(format!(
@@ -162,9 +162,7 @@ fn read_data_object_to_R_buffer(
         }
     };
 
-    let mut reader = BufReader::with_capacity(size * 2, file);
-
-    match reader.seek(SeekFrom::Start(offset)) {
+    match file.seek(SeekFrom::Start(offset)) {
         Ok(_) => {}
         Err(e) => {
             return Err(extendr_api::Error::from(format!(
@@ -174,23 +172,15 @@ fn read_data_object_to_R_buffer(
         }
     };
 
-    let mut compressed_object = r_buf.as_raw_slice_mut().unwrap();
+    let mut decompressed_object = r_buf.as_raw_slice_mut().unwrap();
 
-    match reader.read_exact(&mut compressed_object) {
+    let mut limit_reader = file.take(size);
+
+    match copy_decode(&mut limit_reader, decompressed_object) {
         Ok(_) => {}
         Err(e) => {
             return Err(extendr_api::Error::from(format!(
-                "Error reading from file: {}",
-                e
-            )))
-        }
-    };
-
-    let decompressed_object = match decompress_data(&compressed_object) {
-        Ok(f) => f,
-        Err(e) => {
-            return Err(extendr_api::Error::from(format!(
-                "Error decompressing: {}",
+                "Error decompressing in file: {}",
                 e
             )))
         }
