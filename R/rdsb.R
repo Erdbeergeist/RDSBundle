@@ -90,7 +90,8 @@ readObjectFromRDSBundle <- function(bundle_file, key, index = NULL) {
 
     close(con)
   } else if (getOption("rdsBundle.read_backend") == "rust") {
-    raw_object <- read_data_object(bundle_file, object_offset, object_size)
+    raw_object <- raw(object_raw_size)
+    read_data_object_to_R_buffer(bundle_file, raw_object, object_offset, object_size)
   }
 
   return(unserialize(raw_object))
