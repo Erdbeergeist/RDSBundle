@@ -155,7 +155,7 @@ getRDSBundleLayout <- function(bundle_file) {
 #' @param ... Named options to set
 #' @param reset resets all options to default values if TRUE
 #' @export
-rdsBundleOptions <- function(..., reset = FASLE) {
+rdsBundleOptions <- function(..., reset = FALSE) {
   default_options <- list(
     rdsBundle.backend = "rust",
     rdsBundle.write_backend = "rust",

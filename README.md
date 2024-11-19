@@ -12,3 +12,11 @@ RDSBundle files offer:
 This is done by converting all objects to .rds files in memory then writing them all to a single file.
 At the end of the file an index table is stored locating the objects within the .rdsb file and allowing for 
 selective and parallel reading.
+
+Now offering a much, much faster backend written in rust, using the excellent [rextendr](https://github.com/extendr/rextendr) package. This is enabled by default but can be turned off
+
+```R
+setOption("rdsBundle.read_backend", "R")
+setOption("rdsBundle.write_backend", "R")
+```
+Switching back to rust requires reloading or setting the options to "rust".
