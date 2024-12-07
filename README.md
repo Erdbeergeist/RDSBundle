@@ -20,3 +20,8 @@ setOption("rdsBundle.read_backend", "R")
 setOption("rdsBundle.write_backend", "R")
 ```
 Switching back to rust requires reloading or setting the options to "rust".
+
+## Installing
+Currently the package can be installed if a working rust toolchain is available.
+For most platforms this is as simple as running the *rustup* scrtipt. 
+See [Rust installation](https://www.rust-lang.org/tools/install).
