@@ -25,3 +25,5 @@ Switching back to rust requires reloading or setting the options to "rust".
 Currently the package can be installed if a working rust toolchain is available.
 For most platforms this is as simple as running the *rustup* scrtipt. 
 See [Rust installation](https://www.rust-lang.org/tools/install).
+
+For arm64 MacOS and Linux binary versions of the package are included in the latest release.
